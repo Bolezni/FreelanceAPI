@@ -1,0 +1,22 @@
+server:
+  port: 8080
+
+spring:
+  datasource:
+    driver-class-name: org.postgresql.Driver
+    url: jdbc:postgresql://localhost:5432/freelancePlatformDb
+    username: postgres
+    password: admin
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+  security:
+    oauth2:
+      client:
+        registration:
+          google:
+            redirect-uri: http://localhost:8080/login/oauth2/code/google
+            client-id: 634777143224-knekqpksp0iv95jpfip1t66qugqf2as2.apps.googleusercontent.com
+            client-secret: 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
+            scope: email, profile

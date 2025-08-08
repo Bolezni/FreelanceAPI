@@ -9,4 +9,5 @@ dependencies {
     testImplementation 'org.springframework.security:spring-security-test'
 
     implementation project(':bd-data')
+    runtimeOnly 'org.postgresql:postgresql'
 }
