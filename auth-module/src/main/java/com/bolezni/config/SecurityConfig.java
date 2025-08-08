@@ -1,5 +1,7 @@
-package com.bolezni.security;
+package com.bolezni.config;
 
+import com.bolezni.repository.UserRepository;
+import com.bolezni.security.CustomUserDetailsService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Bean;
@@ -16,6 +18,9 @@ import org.springframework.security.core.session.SessionRegistryImpl;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
+import org.springframework.security.oauth2.client.userinfo.OAuth2UserService;
+import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
@@ -33,6 +38,8 @@ import java.util.List;
 public class SecurityConfig {
 
     private final UserRepository userRepository;
+    private final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService;
+
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -50,6 +57,11 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/v1/auth/login", "/api/v1/auth/register", "/api/v1/auth/logout").permitAll()
                         .anyRequest().authenticated())
+                .oauth2Login(oauth -> oauth
+                        .userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
+                                .userService(oAuth2UserService))
+                )
+
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                                 .maximumSessions(5)
