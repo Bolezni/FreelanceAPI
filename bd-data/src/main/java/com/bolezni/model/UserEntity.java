@@ -17,6 +17,10 @@ import java.util.Set;
 @Entity
 public class UserEntity extends BaseEntity {
 
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    private String id;
+
     @Column(name = "first_name", nullable = false)
     private String firstName;
 
