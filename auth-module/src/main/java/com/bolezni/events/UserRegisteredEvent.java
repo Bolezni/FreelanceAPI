@@ -4,7 +4,12 @@ import lombok.Getter;
 
 @Getter
 public class UserRegisteredEvent extends AuthEvent<String> {
-    public UserRegisteredEvent(Object source, String data) {
+    private final String firstname;
+    private final String verificationToken;
+
+    public UserRegisteredEvent(Object source, String data, String firstname, String verificationToken) {
         super(source, data);
+        this.firstname = firstname;
+        this.verificationToken = verificationToken;
     }
 }

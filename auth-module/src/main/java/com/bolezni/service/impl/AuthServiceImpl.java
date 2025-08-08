@@ -124,7 +124,9 @@ public class AuthServiceImpl implements AuthService {
         try {
             UserRegisteredEvent event = new UserRegisteredEvent(
                     this,
-                    savedUser.getEmail()
+                    savedUser.getEmail(),
+                    savedUser.getFirstName(),
+                    savedUser.getVerificationToken()
             );
 
             eventPublisher.publishEvent(event);

@@ -10,8 +10,12 @@ repositories {
 }
 
 dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
+    implementation('org.springframework.boot:spring-boot-starter-web')
+
+    implementation project(':auth-module')
 }
 
 test {
