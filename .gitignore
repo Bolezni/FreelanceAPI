@@ -38,4 +38,3 @@ out/
 
 ### Локальные конфигурации с секретами ###
 auth-module/src/main/resources/application.yml
-.env
