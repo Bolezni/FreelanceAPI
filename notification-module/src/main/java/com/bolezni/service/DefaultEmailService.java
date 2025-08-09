@@ -1,45 +1,42 @@
 package com.bolezni.service;
 
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Service;
 
 @Slf4j
 @Service
-@RequiredArgsConstructor
 public class DefaultEmailService implements EmailService {
     private final JavaMailSender mailSender;
 
-    @Value("${spring.mail.username}")
-    private String from;
+    public DefaultEmailService(JavaMailSender mailSender) {
+        this.mailSender = mailSender;
+        log.info("EmailService initialized!");
+    }
 
-    @Value("${app.base-url}")
-    private String baseUrl;
 
     @Override
     public void sendEmail(String to, String subject, String body) {
-        try{
+        try {
             SimpleMailMessage message = new SimpleMailMessage();
-            message.setFrom(from);
+            log.info("Sending email from " + message.getFrom());
             message.setTo(to);
             message.setSubject(subject);
             message.setText(body);
             mailSender.send(message);
 
             log.info("Email sent successfully to: {}", to);
-        }catch (Exception e){
+        } catch (Exception e) {
             log.error("Failed to send email to: {}. Error: {}", to, e.getMessage());
         }
 
     }
 
     @Override
-    public void sendVerificationEmail(String to, String name, String verificationCode) {
+    public void sendVerificationEmail(String to, String name, String tokenValue, String verificationCode) {
         String subject = "Please verify your email address";
-        String verificationUrl = baseUrl + "/auth/verify?token=" + verificationCode;
+        String token = "http://localhost:8090" + "/api/v1/auth/verify?token=" + tokenValue;
 
         String body = String.format(
                 """
@@ -48,6 +45,8 @@ public class DefaultEmailService implements EmailService {
                         Thank you for registering! Please click the link below to verify your email address:
 
                         %s
+                        
+                        or write this code: %s
 
                         This link will expire in 24 hours.
 
@@ -55,7 +54,7 @@ public class DefaultEmailService implements EmailService {
 
                         Best regards,
                         Your Application Team""",
-                name, verificationUrl
+                name, token, verificationCode
         );
 
         sendEmail(to, subject, body);

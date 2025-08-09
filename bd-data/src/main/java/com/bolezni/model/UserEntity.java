@@ -3,8 +3,9 @@ package com.bolezni.model;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 
@@ -42,12 +43,6 @@ public class UserEntity extends BaseEntity {
     @Column(name = "provider_id")
     private String providerId;
 
-    @Column(name = "verification_token ")
-    private String verificationToken;
-
-    @Column(name = "expiration_token")
-    private LocalDateTime expirationToken;
-
     @Column(name = "is_verified")
     @Builder.Default
     private boolean isVerified = false;
@@ -58,4 +53,9 @@ public class UserEntity extends BaseEntity {
     @Column(name = "roles")
     @Builder.Default
     private Set<Roles> roles = new HashSet<>();
+
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
+    @Builder.Default
+    private List<EmailVerificationToken> emailVerificationTokens = new ArrayList<>();
 }

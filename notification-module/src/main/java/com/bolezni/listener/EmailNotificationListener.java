@@ -20,9 +20,12 @@ public class EmailNotificationListener {
     public void handleUserRegistered(UserRegisteredEvent event) {
         try {
             log.info("Processing email notification for user: {}", event);
+            log.info("Email: "+ event.getData());
+            log.info("Code: " + event.getVerificationToken());
             emailService.sendVerificationEmail(
                     event.getData(),
                     event.getFirstname(),
+                    event.getToken(),
                     event.getVerificationToken()
 
             );

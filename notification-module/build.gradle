@@ -1,23 +1,9 @@
-plugins {
-    id 'java'
-}
-
-group = 'com.bolezni'
-version = 'unspecified'
-
-repositories {
-    mavenCentral()
-}
 
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'org.springframework.boot:spring-boot-starter-mail:2.4.1'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    implementation('org.springframework.boot:spring-boot-starter-web')
+    implementation('org.springframework.boot:spring-boot-starter-web:3.4.5')
 
     implementation project(':auth-module')
-}
-
-test {
-    useJUnitPlatform()
 }

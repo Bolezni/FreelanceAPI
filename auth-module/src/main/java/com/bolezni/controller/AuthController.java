@@ -1,19 +1,14 @@
 package com.bolezni.controller;
 
-import com.bolezni.dto.ApiResponse;
-import com.bolezni.dto.LoginRequest;
-import com.bolezni.dto.LoginResponse;
-import com.bolezni.dto.RegisterRequest;
+import com.bolezni.dto.*;
 import com.bolezni.service.AuthService;
+import com.bolezni.service.VerificationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 @RestController
 @RequiredArgsConstructor
@@ -21,6 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthController {
 
     private final AuthService authService;
+
+    private final VerificationService verificationService;
 
     private static final String LOGIN = "/login";
 
@@ -44,6 +41,20 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(HttpServletRequest request, HttpServletResponse response) {
         authService.logout(request, response);
         ApiResponse<Void> apiResponse = new ApiResponse<>(true, null, "Successful logout");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @PostMapping("/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyCode(@RequestBody @Valid VerifyEmailRequest request) {
+        verificationService.verifyByCode(request);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(true, null, "Successful verification");
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @GetMapping("/verify")
+    public ResponseEntity<ApiResponse<Void>> verifyCodeByParam(@RequestParam(name = "token") String token) {
+        verificationService.verifyByCode(token);
+        ApiResponse<Void> apiResponse = new ApiResponse<>(true, null, "Successful verification");
         return ResponseEntity.ok(apiResponse);
     }
 }
