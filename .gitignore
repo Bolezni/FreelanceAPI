@@ -5,6 +5,9 @@ build/
 !**/src/main/**/build/
 !**/src/test/**/build/
 
+### Удалите эту строку! ###
+# !**/src/main/resources/application.yml
+
 ### STS ###
 .apt_generated
 .classpath
@@ -36,6 +39,8 @@ out/
 ### VS Code ###
 .vscode/
 
+### Добавьте это ###
+# Локальные конфигурации с секретами
 **/src/main/resources/application-local.yml
 **/src/main/resources/application-local.properties
 .env
