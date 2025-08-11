@@ -2,4 +2,5 @@ rootProject.name = 'freelanceAPI'
 include 'auth-module'
 include 'bd-data'
 include 'notification-module'
+include 'project-module'
 
