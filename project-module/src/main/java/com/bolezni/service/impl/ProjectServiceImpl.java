@@ -9,6 +9,7 @@ import com.bolezni.model.ProjectEntity;
 import com.bolezni.model.UserEntity;
 import com.bolezni.repository.CategoryRepository;
 import com.bolezni.repository.ProjectRepository;
+import com.bolezni.security.CustomUserDetails;
 import com.bolezni.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +19,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -49,6 +51,11 @@ public class ProjectServiceImpl implements ProjectService {
         }
 
         ProjectEntity project = projectMapper.mapProjectCreateToProjectDto(projectCreateDto);
+
+        UserEntity author = getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("User not found or non authorized"));
+
+        project.setAuthor(author);
 
         log.info("Project created {}", project);
         ProjectEntity savedProject = projectRepository.save(project);
@@ -201,8 +208,12 @@ public class ProjectServiceImpl implements ProjectService {
     private Optional<UserEntity> getCurrentUser() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication.isAuthenticated()) {
-            UserEntity user = (UserEntity) authentication.getPrincipal();
-            return Optional.of(user);
+            Object principal = authentication.getPrincipal();
+            if(principal instanceof UserDetails) {
+                return Optional.of(((CustomUserDetails) principal).getUser());
+            }else if(principal instanceof UserEntity) {
+                return Optional.of((UserEntity) principal);
+            }
         }
         return Optional.empty();
     }

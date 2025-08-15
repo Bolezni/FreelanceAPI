@@ -33,7 +33,7 @@ public class ProjectEntity extends BaseEntity {
     @ManyToOne
     private UserEntity author;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
             name = "project_categories",
             joinColumns = @JoinColumn(name = "project_id"),
