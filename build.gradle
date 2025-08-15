@@ -1,70 +1,19 @@
 plugins {
 	id 'java'
-	id 'org.springframework.boot' version '3.5.4'
+	id 'org.springframework.boot' version '3.5.4' apply false
 	id 'io.spring.dependency-management' version '1.1.7'
 }
 
-// Репозитории для корневого проекта
-repositories {
-	mavenCentral()
+apply plugin: 'org.springframework.boot'
+
+springBoot {
+	mainClass = 'com.bolezni.ApplicationStart'
 }
 
-// Зависимости для корневого проекта
-dependencies {
-	// Основные Spring Boot зависимости
-	implementation 'org.springframework.boot:spring-boot-starter'
-	implementation 'org.springframework.boot:spring-boot-starter-web'
-
-	// Подключение подмодулей как зависимостей
-	implementation project(':auth-module')
-	implementation project(':bd-data')
-	implementation project(':notification-module')
-
-	// Lombok для корневого проекта
-	compileOnly 'org.projectlombok:lombok:1.18.38'
-	annotationProcessor 'org.projectlombok:lombok:1.18.38'
-
-	// Тестовые зависимости
-	testImplementation 'org.springframework.boot:spring-boot-starter-test'
-	testImplementation 'org.springframework.security:spring-security-test'
-}
-
-// Настройка для корневого проекта
-group = 'com.bolezni'
-version = '1.0'
-
-java {
-	sourceCompatibility = JavaVersion.VERSION_21
-	targetCompatibility = JavaVersion.VERSION_21
-}
-
-// Основной класс приложения (если есть)
-jar {
-	enabled = false // Отключаем обычный jar для исполняемого приложения
-}
-
-bootJar {
-	enabled = true
-	archiveClassifier = '' // Убираем суффикс из имени jar
-}
-
-test {
-	useJUnitPlatform()
-}
-
-subprojects {
-	apply plugin: 'java'
-	apply plugin: 'java-library'
-	apply plugin: 'io.spring.dependency-management'
-
-	configurations {
-		provided
-	}
-
-	sourceSets {
-		main.compileClasspath += configurations.provided
-		test.compileClasspath += configurations.provided
-		test.runtimeClasspath += configurations.provided
+allprojects {
+	repositories {
+		mavenCentral()
+		google()
 	}
 
 	group = 'com.bolezni'
@@ -74,32 +23,54 @@ subprojects {
 		sourceCompatibility = JavaVersion.VERSION_21
 		targetCompatibility = JavaVersion.VERSION_21
 	}
+}
 
-	jar {
-		enabled = true
+subprojects {
+	apply plugin: 'java-library'
+	apply plugin: 'io.spring.dependency-management'
+
+	// Добавляем Spring Dependency Management для всех подмодулей
+	dependencyManagement {
+		imports {
+			mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
+		}
 	}
 
-	// Отключаем bootJar для подмодулей
-	bootJar {
-		enabled = false
-	}
-
-	test {
-		useJUnitPlatform()
-	}
-
-	repositories {
-		mavenCentral()
+	configurations {
+		compileOnly {
+			extendsFrom annotationProcessor
+		}
 	}
 
 	dependencies {
 		compileOnly 'org.projectlombok:lombok:1.18.38'
-		testCompileOnly 'org.projectlombok:lombok:1.18.38'
 		annotationProcessor 'org.projectlombok:lombok:1.18.38'
-		testAnnotationProcessor 'org.projectlombok:lombok:1.18.38'
 
-		testImplementation 'org.springframework.security:spring-security-test'
 		testImplementation 'org.springframework.boot:spring-boot-starter-test'
-		testImplementation 'com.h2database:h2'
+		testImplementation 'org.springframework.security:spring-security-test:6.4.5'
+		testImplementation 'com.h2database:h2:2.2.224'
 	}
+
+	bootJar {
+		enabled = false
+	}
+
+	jar {
+		enabled = true
+	}
+}
+
+dependencies {
+	implementation 'org.springframework.boot:spring-boot-starter-web'
+	implementation 'org.springframework.boot:spring-boot-starter-security'
+	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation project(':auth-module')
+	implementation project(':bd-data')
+	implementation project(':notification-module')
+	implementation project(':project-module')
+}
+
+bootJar {
+	enabled = true
+	archiveClassifier = ''
 }

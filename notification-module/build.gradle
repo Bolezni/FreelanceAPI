@@ -1,9 +1,15 @@
 
+
 dependencies {
-    implementation 'org.springframework.boot:spring-boot-starter-mail:2.4.1'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'  // Без версии (управляется через BOM)
+    api 'org.springframework.boot:spring-boot-starter-web'
+
+    // Модули проекта
+    implementation project(':auth-module')
+
+    // Тестовые зависимости
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testImplementation 'org.springframework.security:spring-security-test'
     testImplementation platform('org.junit:junit-bom:5.10.0')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    implementation('org.springframework.boot:spring-boot-starter-web:3.4.5')
-
-    implementation project(':auth-module')
 }
