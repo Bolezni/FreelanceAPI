@@ -83,7 +83,8 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        UserEntity user = getCurrentUser().orElseThrow(() -> new RuntimeException("User not found or not logged in"));
+        UserEntity user = getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("User not found or not logged in"));
 
         if (!user.getId().equals(project.getAuthor().getId())) {
             log.error("User not logged in");
@@ -240,13 +241,12 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Page<ProjectDto> getProjectsCurrentUser(int page, int size, String userId) {
-        if (userId == null)
-            throw new IllegalArgumentException("User id is null");
+    public Page<ProjectDto> getProjectsCurrentUser(int page, int size) {
+        UserEntity user = getCurrentUser().orElseThrow(() -> new RuntimeException("User not logged in"));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
 
-        Page<ProjectEntity> pageEntities = projectRepository.findAllByAuthorId(pageable, userId);
+        Page<ProjectEntity> pageEntities = projectRepository.findAllByAuthorId(pageable, user.getId());
 
         return pageEntities.map(projectMapper::mapProjectEntityToDto);
     }

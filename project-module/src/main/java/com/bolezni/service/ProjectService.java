@@ -16,5 +16,5 @@ public interface ProjectService {
 
     Page<ProjectDto> getProjects(int page, int size);
 
-    Page<ProjectDto> getProjectsCurrentUser(int page, int size, String userId);
+    Page<ProjectDto> getProjectsCurrentUser(int page, int size);
 }
