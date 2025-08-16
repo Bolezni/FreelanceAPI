@@ -45,7 +45,7 @@ public class UserEntity extends BaseEntity {
 
     @Column(name = "is_verified")
     @Builder.Default
-    private boolean isVerified = false;
+    private boolean verified = false;
 
     @ElementCollection(fetch = FetchType.EAGER, targetClass = Roles.class)
     @Enumerated(EnumType.STRING)
