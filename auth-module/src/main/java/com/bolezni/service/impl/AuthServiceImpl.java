@@ -7,22 +7,16 @@ import com.bolezni.model.Roles;
 import com.bolezni.model.UserEntity;
 import com.bolezni.repository.UserRepository;
 import com.bolezni.security.CustomUserDetails;
+import com.bolezni.security.jwt.JwtService;
 import com.bolezni.service.AuthService;
 import com.bolezni.service.VerificationService;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.session.SessionInformation;
-import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
-import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,11 +31,12 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
-    private final SessionRegistry sessionRegistry;
+    private final JwtService jwtService;
     private final VerificationService emailVerificationService;
+    private final UserDetailsService userDetailsService;
 
     @Override
-    public LoginResponse login(LoginRequest loginRequest, HttpServletRequest request, HttpServletResponse response) {
+    public LoginResponse login(LoginRequest loginRequest) {
         if (loginRequest == null) {
             throw new IllegalArgumentException("loginRequest cannot be null");
         }
@@ -53,28 +48,17 @@ public class AuthServiceImpl implements AuthService {
 
         log.info("Authenticated user: {}", authentication.getName());
 
+        CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(loginRequest.username());
 
-        SecurityContextHolder.getContext().setAuthentication(authentication);
-
-        HttpSession session = request.getSession();
-
-        log.info("New session created: {}", session.getId());
-
-        session.setAttribute(HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY,
-                SecurityContextHolder.getContext());
-
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
-
-        log.info("User logged in: {}", userDetails.getUser());
-
-        CsrfToken csrfToken = (CsrfToken) request.getAttribute(CsrfToken.class.getName());
+        String jwtToken = jwtService.generateToken(userDetails);
+        String refreshToken = jwtService.generateRefreshToken(userDetails);
 
         return new LoginResponse(
                 userDetails.getUser().getId(),
                 userDetails.getUser().getUsername(),
                 userDetails.getUser().getEmail(),
-                session.getId(),
-                csrfToken.getToken() != null ? csrfToken.getToken() : null
+                jwtToken,
+                refreshToken
         );
     }
 
@@ -102,25 +86,6 @@ public class AuthServiceImpl implements AuthService {
         emailVerificationService.createVerificationToken(savedUser);
     }
 
-
-    @Override
-    public void logout(HttpServletRequest request, HttpServletResponse response) {
-        HttpSession httpSession = request.getSession();
-        if (httpSession != null) {
-            String sessionId = httpSession.getId();
-
-            log.debug("Logout sessionId: {}", sessionId);
-
-            SessionInformation sessionInformation = sessionRegistry.getSessionInformation(sessionId);
-            if (sessionInformation != null) {
-                sessionRegistry.removeSessionInformation(sessionId);
-            }
-
-            httpSession.invalidate();
-        }
-
-        SecurityContextHolder.clearContext();
-    }
 
     private UserEntity createNewUser(RegisterRequest registerRequest, Set<Roles> roles) {
         return UserEntity.builder()

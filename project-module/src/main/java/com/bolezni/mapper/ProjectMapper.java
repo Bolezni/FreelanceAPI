@@ -21,7 +21,7 @@ public interface ProjectMapper {
 
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "author", ignore = true)
-    @Mapping(target = "categories", qualifiedByName = "mapStringsToCategories")
+    @Mapping(target = "categories", ignore = true)
     ProjectEntity mapProjectCreateToProjectDto(ProjectCreateDto projectCreateDto);
 
     @Named("mapCategoriesToStrings")

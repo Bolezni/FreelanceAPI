@@ -29,7 +29,6 @@ subprojects {
 	apply plugin: 'java-library'
 	apply plugin: 'io.spring.dependency-management'
 
-	// Добавляем Spring Dependency Management для всех подмодулей
 	dependencyManagement {
 		imports {
 			mavenBom org.springframework.boot.gradle.plugin.SpringBootPlugin.BOM_COORDINATES
@@ -64,6 +63,9 @@ dependencies {
 	implementation 'org.springframework.boot:spring-boot-starter-web'
 	implementation 'org.springframework.boot:spring-boot-starter-security'
 	implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+	implementation 'io.jsonwebtoken:jjwt:0.12.7'
+
+
 	implementation project(':auth-module')
 	implementation project(':bd-data')
 	implementation project(':notification-module')

@@ -13,6 +13,7 @@ import com.bolezni.security.CustomUserDetails;
 import com.bolezni.service.ProjectService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -49,16 +50,24 @@ public class ProjectServiceImpl implements ProjectService {
             log.error("projectCreateDto is null");
             throw new RuntimeException("projectCreateDto is null");
         }
-
-        ProjectEntity project = projectMapper.mapProjectCreateToProjectDto(projectCreateDto);
-
         UserEntity author = getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not found or non authorized"));
 
+        ProjectEntity project = projectMapper.mapProjectCreateToProjectDto(projectCreateDto);
         project.setAuthor(author);
 
-        log.info("Project created {}", project);
-        ProjectEntity savedProject = projectRepository.save(project);
+        if (!projectCreateDto.categories().isEmpty()) {
+            Set<String> cleanCategories = projectCreateDto.categories().stream()
+                    .filter(StringUtils::hasText)
+                    .map(String::trim)
+                    .collect(Collectors.toSet());
+
+            Set<CategoriesEntity> categories = findOrCreateCategories(cleanCategories);
+            project.setCategories(categories);
+        }
+
+        ProjectEntity savedProject = projectRepository.saveAndFlush(project);
+        log.info("Project created with id {}", savedProject.getId());
 
         return projectMapper.mapProjectEntityToDto(savedProject);
     }
@@ -158,31 +167,35 @@ public class ProjectServiceImpl implements ProjectService {
     private Set<CategoriesEntity> findOrCreateCategories(Set<String> categories) {
         Set<CategoriesEntity> existingCategories = categoryRepository.findByNameIn(categories);
 
-        Set<String> categoriesCategoriesNames = existingCategories.stream()
+        Set<String> existingCategoriesNames = existingCategories.stream()
                 .map(CategoriesEntity::getName)
                 .collect(Collectors.toSet());
 
         Set<String> categoriesToCreate = categories.stream()
-                .filter(name -> !categoriesCategoriesNames.contains(name))
+                .filter(name -> !existingCategoriesNames.contains(name))
                 .collect(Collectors.toSet());
 
-        Set<CategoriesEntity> newCategories = Set.of();
-        if (!categoriesToCreate.isEmpty()) {
-            log.debug("Creating {} new categories: {}", categoriesToCreate.size(), categoriesToCreate);
+        Set<CategoriesEntity> newCategories = new HashSet<>();
+        for (String name : categoriesToCreate) {
+            try {
+                CategoriesEntity newCategory = categoryRepository.save(
+                        CategoriesEntity.builder()
+                                .name(name)
+                                .build()
+                );
+                newCategories.add(newCategory);
+            } catch (DataIntegrityViolationException e) {
 
-            Set<CategoriesEntity> categoriesToSave = categoriesToCreate.stream()
-                    .map(name -> CategoriesEntity.builder()
-                            .name(name)
-                            .build())
-                    .collect(Collectors.toSet());
-
-            newCategories = Set.copyOf(categoryRepository.saveAll(categoriesToSave));
+                CategoriesEntity existing = categoryRepository.findByName(name)
+                        .orElseThrow(() -> new RuntimeException("Failed to handle duplicate category"));
+                newCategories.add(existing);
+            }
         }
-        Set<CategoriesEntity> allCategories = new HashSet<>();
-        allCategories.addAll(newCategories);
-        allCategories.addAll(existingCategories);
 
-        return allCategories;
+        Set<CategoriesEntity> result = new HashSet<>(existingCategories);
+        result.addAll(newCategories);
+
+        return result;
     }
 
     @Override
@@ -209,9 +222,9 @@ public class ProjectServiceImpl implements ProjectService {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication.isAuthenticated()) {
             Object principal = authentication.getPrincipal();
-            if(principal instanceof UserDetails) {
+            if (principal instanceof UserDetails) {
                 return Optional.of(((CustomUserDetails) principal).getUser());
-            }else if(principal instanceof UserEntity) {
+            } else if (principal instanceof UserEntity) {
                 return Optional.of((UserEntity) principal);
             }
         }
