@@ -15,6 +15,7 @@ dependencies {
     // Модули проекта
     implementation project(':bd-data')
     implementation project(':auth-module')
+    implementation project(':user-module')
 
     // Тестовые зависимости
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

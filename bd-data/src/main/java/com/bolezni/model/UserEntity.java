@@ -54,14 +54,20 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private Set<Roles> roles = new HashSet<>();
 
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "author", cascade = CascadeType.ALL)
     @Column(name = "project")
     @Builder.Default
     private List<ProjectEntity> projects = new ArrayList<>();
 
-
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "user")
     @Builder.Default
     private List<EmailVerificationToken> emailVerificationTokens = new ArrayList<>();
+
+    @OneToMany(mappedBy = "reviewedUser", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ReviewEntity> receivedReviewEntities = new ArrayList<>();
+
+    @OneToMany(mappedBy = "reviewer", fetch = FetchType.LAZY)
+    @Builder.Default
+    private List<ReviewEntity> givenReviewEntities = new ArrayList<>();
 }

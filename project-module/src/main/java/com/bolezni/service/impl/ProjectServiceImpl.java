@@ -9,8 +9,9 @@ import com.bolezni.model.ProjectEntity;
 import com.bolezni.model.UserEntity;
 import com.bolezni.repository.CategoryRepository;
 import com.bolezni.repository.ProjectRepository;
-import com.bolezni.security.CustomUserDetails;
 import com.bolezni.service.ProjectService;
+import com.bolezni.utils.UpdateFieldUtils;
+import com.bolezni.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,19 +19,13 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
-import java.math.BigDecimal;
 import java.util.HashSet;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -50,7 +45,7 @@ public class ProjectServiceImpl implements ProjectService {
             log.error("projectCreateDto is null");
             throw new RuntimeException("projectCreateDto is null");
         }
-        UserEntity author = getCurrentUser()
+        UserEntity author = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not found or non authorized"));
 
         ProjectEntity project = projectMapper.mapProjectCreateToProjectDto(projectCreateDto);
@@ -83,7 +78,7 @@ public class ProjectServiceImpl implements ProjectService {
         ProjectEntity project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
 
-        UserEntity user = getCurrentUser()
+        UserEntity user = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not found or not logged in"));
 
         if (!user.getId().equals(project.getAuthor().getId())) {
@@ -104,35 +99,12 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private boolean updateFiledProjectEntity(ProjectEntity project, ProjectUpdateDto updateDto) {
-        boolean changed = false;
-
-        changed |= updateStringField(updateDto.title(), project.getTitle(), project::setTitle);
-        changed |= updateStringField(updateDto.description(), project.getDescription(), project::setDescription);
-        changed |= updatePriceField(updateDto.price(), project.getPrice(), project::setPrice);
-
-        changed |= updateCategoriesField(project, updateDto.categories());
-
-        return changed;
-    }
-
-    private boolean updateStringField(String newValue, String currentValue, Consumer<String> setter) {
-        if (StringUtils.hasText(newValue)) {
-            String trimmedValue = newValue.trim();
-            if (!Objects.equals(trimmedValue, currentValue)) {
-                setter.accept(trimmedValue);
-                return true;
-            }
-        }
-        return false;
-    }
-
-    private boolean updatePriceField(BigDecimal newPrice, BigDecimal currentPrice, Consumer<BigDecimal> setter) {
-        if (newPrice != null && newPrice.compareTo(BigDecimal.ZERO) > 0 &&
-                !Objects.equals(currentPrice, newPrice)) {
-            setter.accept(newPrice);
-            return true;
-        }
-        return false;
+        return UpdateFieldUtils.updateMultipleFields(
+                () -> UpdateFieldUtils.updateStringField(updateDto.title(), project::getTitle, project::setTitle),
+                () -> UpdateFieldUtils.updateStringField(updateDto.description(), project::getDescription, project::setDescription),
+                () -> UpdateFieldUtils.updateNumericField(project.getPrice(), updateDto.price(), project::setPrice, false),
+                () -> updateCategoriesField(project, updateDto.categories())
+        );
     }
 
     private boolean updateCategoriesField(ProjectEntity project, Set<String> categoryNames) {
@@ -202,7 +174,7 @@ public class ProjectServiceImpl implements ProjectService {
     @Override
     @Transactional
     public void deleteProject(Long id) {
-        UserEntity user = getCurrentUser()
+        UserEntity user = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not logged in"));
 
         if (projectRepository.existsByAuthorId(user.getId())) {
@@ -219,19 +191,6 @@ public class ProjectServiceImpl implements ProjectService {
         return projectMapper.mapProjectEntityToDto(projectEntity);
     }
 
-    private Optional<UserEntity> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication.isAuthenticated()) {
-            Object principal = authentication.getPrincipal();
-            if (principal instanceof UserDetails) {
-                return Optional.of(((CustomUserDetails) principal).getUser());
-            } else if (principal instanceof UserEntity) {
-                return Optional.of((UserEntity) principal);
-            }
-        }
-        return Optional.empty();
-    }
-
     @Override
     public Page<ProjectDto> getProjects(int page, int size) {
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
@@ -242,7 +201,7 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     public Page<ProjectDto> getProjectsCurrentUser(int page, int size) {
-        UserEntity user = getCurrentUser().orElseThrow(() -> new RuntimeException("User not logged in"));
+        UserEntity user = UserUtils.getCurrentUser().orElseThrow(() -> new RuntimeException("User not logged in"));
 
         Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
 

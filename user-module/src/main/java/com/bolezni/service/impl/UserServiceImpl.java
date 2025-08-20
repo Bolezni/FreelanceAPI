@@ -5,20 +5,16 @@ import com.bolezni.dto.UserUpdateDto;
 import com.bolezni.mapper.UserMapper;
 import com.bolezni.model.UserEntity;
 import com.bolezni.repository.UserRepository;
-import com.bolezni.security.CustomUserDetails;
 import com.bolezni.service.UserService;
+import com.bolezni.utils.UpdateFieldUtils;
+import com.bolezni.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.util.Objects;
-import java.util.Optional;
-import java.util.function.Consumer;
 
 @Slf4j
 @Service
@@ -30,7 +26,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public UserResponseDto getAuthenticationUser() {
-        UserEntity user = getCurrentUser()
+        UserEntity user = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         return userMapper.userToUserResponseDto(user);
@@ -44,13 +40,10 @@ public class UserServiceImpl implements UserService {
             throw new RuntimeException("UserUpdateDto is null");
         }
 
-        UserEntity currentUser = getCurrentUser()
+        UserEntity currentUser = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        if (!Objects.equals(id, currentUser.getId())) {
-            log.error("User id mismatch");
-            throw new RuntimeException("User id mismatch");
-        }
+        isValidUser(id, currentUser.getId());
 
         boolean isChanged = updateUserInfo(currentUser, userUpdateDto);
 
@@ -65,34 +58,18 @@ public class UserServiceImpl implements UserService {
     }
 
     private boolean updateUserInfo(UserEntity user, UserUpdateDto userUpdateDto) {
-        boolean hasChanged = false;
-
-        hasChanged |= updateStringField(userUpdateDto.firstName(), user.getFirstName(), user::setFirstName);
-        hasChanged |= updateStringField(userUpdateDto.lastName(), user.getLastName(), user::setLastName);
-
-        return hasChanged;
-    }
-
-    private boolean updateStringField(String newValue, String currentValue, Consumer<String> setter) {
-        if (StringUtils.hasText(newValue)) {
-            String trimmedValue = newValue.trim();
-            if (!Objects.equals(trimmedValue, currentValue)) {
-                setter.accept(trimmedValue);
-                return true;
-            }
-        }
-        return false;
+        return UpdateFieldUtils.updateMultipleFields(
+                () -> UpdateFieldUtils.updateStringField(userUpdateDto.firstName(), user::getFirstName, user::setFirstName),
+                () -> UpdateFieldUtils.updateStringField(userUpdateDto.lastName(), user::getLastName, user::setLastName)
+        );
     }
 
     @Override
     @Transactional
     public void deleteUserById(String id) {
         if (StringUtils.hasText(id)) {
-            UserEntity currentUser = getCurrentUser().orElseThrow(() -> new RuntimeException("User not found"));
-            if (!Objects.equals(id, currentUser.getId())) {
-                log.error("User id mismatch");
-                throw new RuntimeException("User id mismatch");
-            }
+            UserEntity currentUser = UserUtils.getCurrentUser().orElseThrow(() -> new RuntimeException("User not found"));
+            isValidUser(id, currentUser.getId());
             userRepository.deleteById(id);
         } else {
             log.error("User id is null");
@@ -100,16 +77,10 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private Optional<UserEntity> getCurrentUser() {
-        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication.isAuthenticated()) {
-            Object principal = authentication.getPrincipal();
-            if (principal instanceof UserDetails) {
-                return Optional.of(((CustomUserDetails) principal).getUser());
-            } else if (principal instanceof UserEntity) {
-                return Optional.of((UserEntity) principal);
-            }
+    private void isValidUser(String responseId, String currentUserId) {
+        if (!Objects.equals(responseId, currentUserId)) {
+            log.error("User id mismatch");
+            throw new RuntimeException("User id mismatch");
         }
-        return Optional.empty();
     }
 }
