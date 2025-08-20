@@ -2,6 +2,7 @@ package com.bolezni.config;
 
 import com.bolezni.repository.UserRepository;
 import com.bolezni.security.CustomUserDetailsService;
+import com.bolezni.security.filter.EmailVerificationFilter;
 import com.bolezni.security.jwt.JwtFilter;
 import com.bolezni.security.jwt.JwtService;
 import lombok.RequiredArgsConstructor;
@@ -43,6 +44,7 @@ public class SecurityConfig {
     private final UserRepository userRepository;
     private final OAuth2UserService<OAuth2UserRequest, OAuth2User> oAuth2UserService;
     private final JwtService jwtService;
+    private final EmailVerificationFilter emailFilter;
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -75,6 +77,7 @@ public class SecurityConfig {
                 )
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilterBefore(jwtFilter(), UsernamePasswordAuthenticationFilter.class)
+                .addFilterAfter(emailFilter, JwtFilter.class)
                 .build();
     }
 
