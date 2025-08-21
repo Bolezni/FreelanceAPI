@@ -63,11 +63,11 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private List<EmailVerificationToken> emailVerificationTokens = new ArrayList<>();
 
-    @OneToMany(mappedBy = "reviewedUser", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "reviewedUser", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Builder.Default
     private List<ReviewEntity> receivedReviewEntities = new ArrayList<>();
 
-    @OneToMany(mappedBy = "reviewer", fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "reviewer", fetch = FetchType.LAZY,  cascade = CascadeType.ALL)
     @Builder.Default
     private List<ReviewEntity> givenReviewEntities = new ArrayList<>();
 }

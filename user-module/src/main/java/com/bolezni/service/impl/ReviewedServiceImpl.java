@@ -81,10 +81,7 @@ public class ReviewedServiceImpl implements ReviewedService {
         UserEntity currentUser = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("Unauthorized or not found"));
 
-        if (!review.getReviewer().getId().equals(currentUser.getId())) {
-            log.error("Reviewer not match");
-            throw new RuntimeException("Reviewer not match");
-        }
+        reviewerIdMatch(review.getReviewer().getId(), currentUser.getId());
 
         boolean hasChanged = updateFields(review, reviewUpdateDto);
 
@@ -121,5 +118,44 @@ public class ReviewedServiceImpl implements ReviewedService {
         Page<ReviewEntity> reviewPage = reviewerRepository.findAllByReviewedUserId(pageable, reviewed.getId());
 
         return reviewPage.map(reviewMapper::mapToDto);
+    }
+
+    @Override
+    @Transactional
+    public ReviewResponseDto updateReviewStatus(Long id, String status) {
+        UserEntity currentUser = UserUtils.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("Unauthorized or not found"));
+
+        ReviewEntity review = reviewerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+
+        reviewerIdMatch(review.getReviewer().getId(), currentUser.getId());
+
+        review.setStatus(ReviewStatus.valueOf(status));
+
+        reviewerRepository.save(review);
+
+        return reviewMapper.mapToDto(review);
+    }
+
+    @Override
+    @Transactional
+    public void deleteReview(Long id) {
+        UserEntity currentUser = UserUtils.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        ReviewEntity reviewToDelete = reviewerRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Review not found"));
+
+        reviewerIdMatch(reviewToDelete.getReviewer().getId(), currentUser.getId());
+
+        reviewerRepository.deleteById(reviewToDelete.getId());
+    }
+
+    private void reviewerIdMatch(String reviewerId, String currentUserId) {
+        if(!reviewerId.equals(currentUserId)) {
+            log.error("Reviewer not match");
+            throw new RuntimeException("Reviewer not match");
+        }
     }
 }

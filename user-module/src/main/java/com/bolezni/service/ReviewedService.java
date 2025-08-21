@@ -16,4 +16,8 @@ public interface ReviewedService {
     Page<ReviewResponseDto> getAllReviewsCurrentUser(Pageable pageable);
 
     Page<ReviewResponseDto> getAllReviewsByReviewedUser(String reviewedId, Pageable pageable);
+
+    ReviewResponseDto updateReviewStatus(Long id, String status);
+
+    void deleteReview(Long id);
 }

@@ -22,7 +22,6 @@ public class ReviewController {
 
     private final ReviewedService reviewService;
 
-
     @GetMapping("/{id}")
     public ResponseEntity<ApiResponse<ReviewResponseDto>> getReviewById(@PathVariable(name = "id") Long id) {
         ReviewResponseDto dto = reviewService.getReview(id);
@@ -77,5 +76,24 @@ public class ReviewController {
         return ResponseEntity.ok(reviews);
     }
 
+    @PatchMapping("/{id}/status/{status}")
+    public ResponseEntity<ReviewResponseDto> updateReviewStatus(
+            @PathVariable(name = "id") Long id,
+            @PathVariable(name = "status") String status) {
 
+        ReviewResponseDto updatedReview = reviewService.updateReviewStatus(id, status);
+        return ResponseEntity.ok(updatedReview);
+    }
+
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<ApiResponse<Void>> deleteReview(@PathVariable(name = "id") Long id) {
+        reviewService.deleteReview(id);
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .status(true)
+                .message("Successful delete review")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).body(apiResponse);
+    }
 }
