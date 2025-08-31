@@ -2,12 +2,14 @@ package com.bolezni.utils;
 
 import com.bolezni.model.UserEntity;
 import com.bolezni.security.CustomUserDetails;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Optional;
 
+@Slf4j
 public final class UserUtils {
     private UserUtils() {}
 
@@ -22,5 +24,12 @@ public final class UserUtils {
             }
         }
         return Optional.empty();
+    }
+
+    public static void isCurrentUser(String userId, String currentUserId) {
+        if(!userId.equals(currentUserId)) {
+            log.warn("User is miss math");
+            throw new RuntimeException("User is miss math");
+        }
     }
 }

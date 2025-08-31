@@ -1,5 +1,6 @@
-package com.bolezni.service;
+package com.bolezni.service.impl;
 
+import com.bolezni.service.EmailService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;

@@ -55,7 +55,6 @@ public class UserEntity extends BaseEntity {
     private Set<Roles> roles = new HashSet<>();
 
     @OneToMany(fetch = FetchType.LAZY, mappedBy = "author", cascade = CascadeType.ALL)
-    @Column(name = "project")
     @Builder.Default
     private List<ProjectEntity> projects = new ArrayList<>();
 
@@ -67,7 +66,31 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private List<ReviewEntity> receivedReviewEntities = new ArrayList<>();
 
-    @OneToMany(mappedBy = "reviewer", fetch = FetchType.LAZY,  cascade = CascadeType.ALL)
+    @OneToMany(mappedBy = "reviewer", fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     @Builder.Default
     private List<ReviewEntity> givenReviewEntities = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.EAGER, mappedBy = "user", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<UserDeviceTokenEntity> deviceTokens = new ArrayList<>();
+
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
+    @Builder.Default
+    private List<NotificationEntity> notifications = new ArrayList<>();
+
+    @Column(name = "email_notifications_enabled")
+    @Builder.Default
+    private boolean emailNotificationsEnabled = true;
+
+    @Column(name = "push_notifications_enabled")
+    @Builder.Default
+    private boolean pushNotificationsEnabled = true;
+
+    @Column(name = "marketing_notifications_enabled")
+    @Builder.Default
+    private boolean marketingNotificationsEnabled = false;
+
+    public String getFullName() {
+        return firstName + " " + lastName;
+    }
 }
