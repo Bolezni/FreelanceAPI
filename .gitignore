@@ -38,4 +38,5 @@ out/
 
 ### Локальные конфигурации с секретами ###
 auth-module/src/main/resources/application.yml
+notification-module/src/main/resources/firebase-adminsdk.json
 .env
