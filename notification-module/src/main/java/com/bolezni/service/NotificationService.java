@@ -13,6 +13,6 @@ public interface NotificationService {
     void sendToToken(String token, String title, String body,
                      Map<String, String> data, String userName) throws FirebaseMessagingException;
 
-    void sendToProjectMembers(Long projectId, String title, String body,
-                              Map<String, String> data);
+    NotificationResponse sendToProjectMembers(Long projectId, String title, String body,
+                              Map<String, String> data, NotificationType type);
 }

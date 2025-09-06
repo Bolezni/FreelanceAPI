@@ -1,5 +1,6 @@
 package com.bolezni.dto;
 
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 
@@ -14,7 +15,7 @@ public record RegisterRequest(
         String email,
         @NotBlank
         String username,
-        @NotBlank
+        @NotBlank @Min(6)
         String password,
         @NotNull
         Set<String> roles

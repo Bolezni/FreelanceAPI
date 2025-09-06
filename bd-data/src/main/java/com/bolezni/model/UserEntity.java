@@ -70,7 +70,7 @@ public class UserEntity extends BaseEntity {
     @Builder.Default
     private List<ReviewEntity> givenReviewEntities = new ArrayList<>();
 
-    @OneToMany(fetch = FetchType.EAGER, mappedBy = "user", cascade = CascadeType.ALL)
+    @OneToMany(fetch = FetchType.LAZY, mappedBy = "user", cascade = CascadeType.ALL)
     @Builder.Default
     private List<UserDeviceTokenEntity> deviceTokens = new ArrayList<>();
 

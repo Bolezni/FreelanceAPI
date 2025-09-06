@@ -1,5 +1,6 @@
 package com.bolezni.service.impl;
 
+import com.bolezni.dto.ChangePasswordDto;
 import com.bolezni.dto.UserResponseDto;
 import com.bolezni.dto.UserUpdateDto;
 import com.bolezni.mapper.UserMapper;
@@ -10,6 +11,7 @@ import com.bolezni.utils.UpdateFieldUtils;
 import com.bolezni.utils.UserUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
@@ -23,6 +25,7 @@ public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     public UserResponseDto getAuthenticationUser() {
@@ -43,7 +46,7 @@ public class UserServiceImpl implements UserService {
         UserEntity currentUser = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        isValidUser(id, currentUser.getId());
+        UserUtils.isCurrentUser(id, currentUser.getId());
 
         boolean isChanged = updateUserInfo(currentUser, userUpdateDto);
 
@@ -69,7 +72,7 @@ public class UserServiceImpl implements UserService {
     public void deleteUserById(String id) {
         if (StringUtils.hasText(id)) {
             UserEntity currentUser = UserUtils.getCurrentUser().orElseThrow(() -> new RuntimeException("User not found"));
-            isValidUser(id, currentUser.getId());
+            UserUtils.isCurrentUser(id, currentUser.getId());
             userRepository.deleteById(id);
         } else {
             log.error("User id is null");
@@ -77,10 +80,33 @@ public class UserServiceImpl implements UserService {
         }
     }
 
-    private void isValidUser(String responseId, String currentUserId) {
-        if (!Objects.equals(responseId, currentUserId)) {
-            log.error("User id mismatch");
-            throw new RuntimeException("User id mismatch");
+    @Override
+    @Transactional
+    public void changePassword(ChangePasswordDto resetPasswordDto) {
+        if (resetPasswordDto == null) {
+            log.error("resetPasswordDto is null");
+            throw new IllegalArgumentException("resetPasswordDto is null");
         }
+
+        UserEntity user = UserUtils.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        String oldPassword = resetPasswordDto.oldPassword();
+        String newPassword = resetPasswordDto.newPassword();
+
+        if (StringUtils.hasText(oldPassword) && StringUtils.hasText(newPassword)) {
+            if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+                log.error("Current password is incorrect");
+                throw new IllegalArgumentException("Current password is incorrect");
+            }
+        }
+
+        if (passwordEncoder.matches(newPassword, user.getPassword())) {
+            log.info("New password must be different from current password");
+            throw new IllegalArgumentException("New password must be different from current password");
+        }
+
+        user.setPassword(passwordEncoder.encode(newPassword));
+        userRepository.save(user);
     }
 }

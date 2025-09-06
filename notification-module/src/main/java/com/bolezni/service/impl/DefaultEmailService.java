@@ -16,7 +16,6 @@ public class DefaultEmailService implements EmailService {
         log.info("EmailService initialized!");
     }
 
-
     @Override
     public void sendEmail(String to, String subject, String body) {
         try {

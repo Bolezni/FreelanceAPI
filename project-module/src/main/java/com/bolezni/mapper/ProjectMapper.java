@@ -22,6 +22,10 @@ public interface ProjectMapper {
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "author", ignore = true)
     @Mapping(target = "categories", ignore = true)
+    @Mapping(target = "freelancer", ignore = true)
+    @Mapping(target = "takenAt", ignore = true)
+    @Mapping(target = "completedAt", ignore = true)
+    @Mapping(target = "status", ignore = true)
     ProjectEntity mapProjectCreateToProjectDto(ProjectCreateDto projectCreateDto);
 
     @Named("mapCategoriesToStrings")

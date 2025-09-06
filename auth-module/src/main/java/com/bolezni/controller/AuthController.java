@@ -46,4 +46,40 @@ public class AuthController {
         ApiResponse<Void> apiResponse = new ApiResponse<>(true, null, "Successful verification");
         return ResponseEntity.ok(apiResponse);
     }
+
+    @PostMapping("/refresh")
+    public ResponseEntity<ApiResponse<LoginResponse>> refreshToken(@RequestBody @Valid RefreshTokenDto refreshTokenRequest) {
+        LoginResponse dto = authService.refreshJwtToken(refreshTokenRequest);
+        ApiResponse<LoginResponse> apiResponse = ApiResponse.<LoginResponse>builder()
+                .status(true)
+                .data(dto)
+                .message("Successful refresh token")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @PostMapping("/send-token")
+    public ResponseEntity<ApiResponse<Void>> sendTokenResetPassword(@RequestParam(name = "email") String email) {
+        authService.sendTokenForResetPassword(email);
+
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .status(true)
+                .message("Successful send token reset password")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<ApiResponse<Void>> resetPassword(@RequestBody @Valid ResetPasswordDto resetPasswordDto){
+        authService.resetPassword(resetPasswordDto);
+
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .status(true)
+                .message("Successful reset password")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
 }

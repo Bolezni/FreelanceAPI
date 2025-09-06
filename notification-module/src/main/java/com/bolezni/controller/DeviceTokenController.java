@@ -20,7 +20,6 @@ public class DeviceTokenController {
 
     private final DeviceTokenService deviceTokenService;
 
-
     @PostMapping
     public ResponseEntity<ApiResponse<DeviceTokenDto>> createOrUpdateDeviceToken(@RequestBody @Valid TokenRegistrationRequest registrationRequest){
         DeviceTokenDto dto = deviceTokenService.saveOrUpdateDeviceToken(registrationRequest);

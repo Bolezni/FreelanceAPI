@@ -3,7 +3,7 @@ package com.bolezni.events;
 import lombok.Getter;
 
 @Getter
-public class UserRegisteredEvent extends AuthEvent<String> {
+public class UserRegisteredEvent extends BaseEvent<String> {
     private final String firstname;
     private final String token;
     private final String verificationToken;

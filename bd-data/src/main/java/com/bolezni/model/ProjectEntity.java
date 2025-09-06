@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -30,8 +31,25 @@ public class ProjectEntity extends BaseEntity {
     @Column(nullable = false)
     private BigDecimal price;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "author_id")
     private UserEntity author;
+
+    @ManyToOne(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
+    @JoinColumn(name = "freelancer_id")
+    private UserEntity freelancer;
+
+    // Когда проект был взят в работу
+    @Column(name = "taken_at")
+    private LocalDateTime takenAt;
+
+    // Когда проект должен быть завершен
+    @Column(name = "deadline")
+    private LocalDateTime deadline;
+
+    // Когда проект был завершен
+    @Column(name = "completed_at")
+    private LocalDateTime completedAt;
 
     @ManyToMany(fetch = FetchType.LAZY, cascade = {CascadeType.PERSIST, CascadeType.MERGE})
     @JoinTable(
@@ -42,4 +60,8 @@ public class ProjectEntity extends BaseEntity {
     @Builder.Default
     private Set<CategoriesEntity> categories = new HashSet<>();
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ProjectStatus status = ProjectStatus.PENDING;
 }

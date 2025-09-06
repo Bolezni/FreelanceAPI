@@ -6,9 +6,11 @@ import com.bolezni.dto.ProjectUpdateDto;
 import com.bolezni.mapper.ProjectMapper;
 import com.bolezni.model.CategoriesEntity;
 import com.bolezni.model.ProjectEntity;
+import com.bolezni.model.ProjectStatus;
 import com.bolezni.model.UserEntity;
 import com.bolezni.repository.CategoryRepository;
 import com.bolezni.repository.ProjectRepository;
+import com.bolezni.repository.UserRepository;
 import com.bolezni.service.ProjectService;
 import com.bolezni.utils.UpdateFieldUtils;
 import com.bolezni.utils.UserUtils;
@@ -16,13 +18,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -33,9 +34,12 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ProjectServiceImpl implements ProjectService {
 
+    private static final long MAX_ACTIVE_PROJECTS = 5L;
+
     private final ProjectRepository projectRepository;
     private final ProjectMapper projectMapper;
     private final CategoryRepository categoryRepository;
+    private final UserRepository userRepository;
 
 
     @Override
@@ -59,6 +63,19 @@ public class ProjectServiceImpl implements ProjectService {
 
             Set<CategoriesEntity> categories = findOrCreateCategories(cleanCategories);
             project.setCategories(categories);
+        }
+
+        LocalDateTime now = LocalDateTime.now();
+
+        if (projectCreateDto.deadline().isBefore(now) || projectCreateDto.deadline().isEqual(now)) {
+            log.warn("Attempt to set deadline in the past: {}", projectCreateDto.deadline());
+            throw new IllegalArgumentException("Deadline must be in the future");
+        }
+
+        LocalDateTime maxDeadline = now.plusYears(2);
+        if (projectCreateDto.deadline().isAfter(maxDeadline)) {
+            log.warn("Deadline too far in the future: {}", projectCreateDto.deadline());
+            throw new IllegalArgumentException("Deadline cannot be more than 2 years in the future");
         }
 
         ProjectEntity savedProject = projectRepository.saveAndFlush(project);
@@ -192,21 +209,96 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     @Override
-    public Page<ProjectDto> getProjects(int page, int size) {
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
+    public Page<ProjectDto> getProjects(Pageable pageable) {
         Page<ProjectEntity> pageEntities = projectRepository.findAll(pageable);
 
         return pageEntities.map(projectMapper::mapProjectEntityToDto);
     }
 
     @Override
-    public Page<ProjectDto> getProjectsCurrentUser(int page, int size) {
+    public Page<ProjectDto> getProjectsCurrentUser(Pageable pageable) {
         UserEntity user = UserUtils.getCurrentUser().orElseThrow(() -> new RuntimeException("User not logged in"));
-
-        Pageable pageable = PageRequest.of(page, size, Sort.by("createdAt"));
 
         Page<ProjectEntity> pageEntities = projectRepository.findAllByAuthorId(pageable, user.getId());
 
         return pageEntities.map(projectMapper::mapProjectEntityToDto);
+    }
+
+    @Override
+    @Transactional
+    public void assignProjectToFreelancer(Long projectId, String freelancerId) {
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        UserEntity user = userRepository.findById(freelancerId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        validateProjectAssignment(project, user);
+
+        validateFreelancerCapacity(user);
+
+        project.setFreelancer(user);
+        project.setStatus(ProjectStatus.IN_PROGRESS);
+        project.setTakenAt(LocalDateTime.now());
+
+        projectRepository.save(project);
+        //todo: сделать уведомление для автора
+    }
+
+    @Override
+    @Transactional
+    public ProjectDto updateStatus(Long projectId, ProjectStatus status) {
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        UserEntity currentUser = UserUtils.getCurrentUser()
+                .orElseThrow(() -> new RuntimeException("User not logged in"));
+
+        if (project.getStatus() == ProjectStatus.CANCEL || project.getStatus() == ProjectStatus.COMPLETED) {
+            log.info("Project status cancel or completed");
+            throw new RuntimeException("Project status cancel or completed");
+        }
+
+        if (project.getStatus().equals(status)) {
+            log.info("Project status already set");
+            throw new RuntimeException("Project status already set");
+        }
+
+        if (!project.getAuthor().getId().equals(currentUser.getId())) {
+            log.error("Current user is not the author");
+            throw new RuntimeException("Current user is not the author");
+        }
+
+        project.setStatus(status);
+        ProjectEntity savedProject = projectRepository.save(project);
+
+        return projectMapper.mapProjectEntityToDto(savedProject);
+    }
+
+    private void validateFreelancerCapacity(UserEntity freelancer) {
+        long activeProjectsCount = projectRepository
+                .countByFreelancerIdAndStatus(freelancer.getId(), ProjectStatus.IN_PROGRESS);
+
+        if (activeProjectsCount >= MAX_ACTIVE_PROJECTS) {
+            throw new RuntimeException(
+                    "Freelancer has reached maximum capacity of active projects");
+        }
+    }
+
+    private void validateProjectAssignment(ProjectEntity project, UserEntity user) {
+        if (project.getStatus() != ProjectStatus.PENDING) {
+            log.error("The project has already been completed or cancelled");
+            throw new RuntimeException("The project has already been completed or cancelled");
+        }
+
+        if (project.getFreelancer() != null) {
+            log.error("The project has already been assigned to the freelancer");
+            throw new RuntimeException("The project has already been assigned to the freelancer");
+        }
+
+        if (project.getAuthor().getId().equals(user.getId())) {
+            log.error("Author cant take this project");
+            throw new RuntimeException("Author cant take this project");
+        }
     }
 }
