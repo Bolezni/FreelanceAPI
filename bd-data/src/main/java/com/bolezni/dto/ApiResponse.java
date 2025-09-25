@@ -1,13 +1,21 @@
 package com.bolezni.dto;
 
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 @Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class ApiResponse<T> {
-    private boolean status;
-    private T data;
-    private String message;
+    private final boolean status;
+    private final T data;
+    private final String message;
+
+    public ApiResponse(boolean status, T data, String message) {
+        this.status = status;
+        this.data = data;
+        this.message = message;
+    }
 }
