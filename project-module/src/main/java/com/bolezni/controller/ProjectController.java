@@ -118,11 +118,25 @@ public class ProjectController {
         return ResponseEntity.ok(apiResponse);
     }
 
+    @PostMapping("/{projectId}/unassign/{freelancerId}")
+    public ResponseEntity<ApiResponse<Void>> unassignProject(@PathVariable(name = "projectId") @Positive Long projectId,
+                                                             @PathVariable(name = "freelancerId") @NotBlank String freelancerId){
+        projectService.unassignProjectFromFreelancer(projectId, freelancerId);
+
+        ApiResponse<Void> apiResponse = ApiResponse.<Void>builder()
+                .status(true)
+                .message("Project unassigned successfully")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasAnyAuthority('RECRUITER','ADMIN')")
     public ResponseEntity<ApiResponse<ProjectDto>> updateStatus(@PathVariable(name = "id") Long id,
                                                                 @RequestParam @NotNull ProjectStatus status) {
         ProjectDto dto = projectService.updateStatus(id, status);
+
         ApiResponse<ProjectDto> apiResponse = ApiResponse.<ProjectDto>builder()
                 .status(true)
                 .data(dto)

@@ -5,6 +5,8 @@ import com.bolezni.dto.UserResponseDto;
 import com.bolezni.dto.UserUpdateDto;
 
 public interface UserService {
+    UserResponseDto getUserById(String id);
+
     UserResponseDto getAuthenticationUser();
 
     UserResponseDto updateUserInfo(String id, UserUpdateDto userUpdateDto);

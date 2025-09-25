@@ -17,6 +17,19 @@ public class UserController {
 
     private final UserService userService;
 
+    @GetMapping("/{id}")
+    public ResponseEntity<ApiResponse<UserResponseDto>> getUser(@PathVariable(name = "id") String id) {
+        UserResponseDto dto = userService.getUserById(id);
+
+        ApiResponse<UserResponseDto> apiResponse = ApiResponse.<UserResponseDto>builder()
+                .status(true)
+                .data(dto)
+                .message("Successful get user by id")
+                .build();
+
+        return ResponseEntity.ok(apiResponse);
+    }
+
     @GetMapping
     public ResponseEntity<ApiResponse<UserResponseDto>> getCurrentUser() {
         UserResponseDto dto = userService.getAuthenticationUser();

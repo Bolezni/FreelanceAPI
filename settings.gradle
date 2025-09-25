@@ -4,4 +4,5 @@ include 'bd-data'
 include 'notification-module'
 include 'project-module'
 include 'user-module'
+include 'payment_module'
 

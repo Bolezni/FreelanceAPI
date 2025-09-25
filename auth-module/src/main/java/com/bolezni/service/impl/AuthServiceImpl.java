@@ -17,6 +17,7 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -53,9 +54,9 @@ public class AuthServiceImpl implements AuthService {
                         loginRequest.username(),
                         loginRequest.password()));
 
-        log.info("Authenticated user: {}", authentication.getName());
+        log.info("Authenticated user: {} with roles {}", authentication.getName(), authentication.getAuthorities());
 
-        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();;
+        CustomUserDetails userDetails = (CustomUserDetails) authentication.getPrincipal();
 
         String jwtToken = jwtService.generateToken(userDetails);
         String refreshToken = jwtService.generateRefreshToken(userDetails);
@@ -165,8 +166,14 @@ public class AuthServiceImpl implements AuthService {
             log.warn("Username extracted from refresh token is null or empty");
             throw new IllegalArgumentException("Invalid refresh token: cannot extract username");
         }
+        CustomUserDetails userDetails;
+        try{
+            userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+        }catch (Exception e){
+            log.warn("Couldn't upload user data for username: {}", username);
+            throw new IllegalArgumentException("Invalid refresh token: user not found");
 
-        CustomUserDetails userDetails = (CustomUserDetails) userDetailsService.loadUserByUsername(username);
+        }
 
         if (!jwtService.isValidToken(refreshToken, userDetails)) {
             log.warn("Invalid refresh token for user: {}", username);

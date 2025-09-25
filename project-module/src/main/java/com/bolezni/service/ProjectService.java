@@ -22,5 +22,7 @@ public interface ProjectService {
 
     void assignProjectToFreelancer(Long projectId, String freelancerId);
 
+    void unassignProjectFromFreelancer(Long projectId, String freelancerId);
+
     ProjectDto updateStatus(Long projectId, ProjectStatus status);
 }

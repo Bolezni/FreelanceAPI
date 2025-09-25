@@ -247,6 +247,33 @@ public class ProjectServiceImpl implements ProjectService {
 
     @Override
     @Transactional
+    public void unassignProjectFromFreelancer(Long projectId, String freelancerId) {
+        if(projectId == null){
+            log.error("Project id cant be null");
+            throw new RuntimeException("Project id cant be null");
+        }
+
+        if(freelancerId.trim().isBlank()){
+            log.error("Freelancer id cant be null or empty");
+            throw new RuntimeException("Freelancer id cant be null or empty");
+        }
+
+        ProjectEntity project = projectRepository.findById(projectId)
+                .orElseThrow(() -> new RuntimeException("Project not found"));
+
+        validateUnassignmentRights(project,freelancerId);
+
+        validateProjectStatus(project);
+
+        project.setFreelancer(null);
+        project.setStatus(ProjectStatus.PENDING);
+        project.setTakenAt(null);
+
+        projectRepository.save(project);
+    }
+
+    @Override
+    @Transactional
     public ProjectDto updateStatus(Long projectId, ProjectStatus status) {
         ProjectEntity project = projectRepository.findById(projectId)
                 .orElseThrow(() -> new RuntimeException("Project not found"));
@@ -254,25 +281,50 @@ public class ProjectServiceImpl implements ProjectService {
         UserEntity currentUser = UserUtils.getCurrentUser()
                 .orElseThrow(() -> new RuntimeException("User not logged in"));
 
-        if (project.getStatus() == ProjectStatus.CANCEL || project.getStatus() == ProjectStatus.COMPLETED) {
-            log.info("Project status cancel or completed");
-            throw new RuntimeException("Project status cancel or completed");
+        if (!project.getAuthor().getId().equals(currentUser.getId())) {
+            log.error("Current user is not the author");
+            throw new RuntimeException("Current user is not the author");
         }
+
+        validateProjectStatus(project);
 
         if (project.getStatus().equals(status)) {
             log.info("Project status already set");
             throw new RuntimeException("Project status already set");
         }
 
-        if (!project.getAuthor().getId().equals(currentUser.getId())) {
-            log.error("Current user is not the author");
-            throw new RuntimeException("Current user is not the author");
-        }
-
         project.setStatus(status);
         ProjectEntity savedProject = projectRepository.save(project);
 
         return projectMapper.mapProjectEntityToDto(savedProject);
+    }
+
+    private void validateProjectStatus(ProjectEntity project) {
+        Set<ProjectStatus> nonUnassignableStatuses = Set.of(
+                ProjectStatus.COMPLETED,
+                ProjectStatus.CANCEL
+        );
+
+        if (nonUnassignableStatuses.contains(project.getStatus())) {
+            throw new RuntimeException(
+                    "Cannot unassign project in status: " + project.getStatus());
+        }
+    }
+
+    private void validateUnassignmentRights(ProjectEntity project, String freelancerId) {
+        UserEntity freelancer = project.getFreelancer();
+
+        if(freelancer == null || freelancer.getId().isEmpty()){
+            log.error("Freelancer not found");
+            throw new RuntimeException("Freelancer not found");
+        }
+
+        if (!freelancer.getId().equals(freelancerId)) {
+            log.warn("Attempt to unassign project {} from freelancer {} but it's assigned to {}",
+                    project.getId(), freelancerId, freelancer.getId());
+            throw new RuntimeException(
+                    "Project is not assigned to the specified freelancer");
+        }
     }
 
     private void validateFreelancerCapacity(UserEntity freelancer) {
@@ -286,9 +338,9 @@ public class ProjectServiceImpl implements ProjectService {
     }
 
     private void validateProjectAssignment(ProjectEntity project, UserEntity user) {
-        if (project.getStatus() != ProjectStatus.PENDING) {
-            log.error("The project has already been completed or cancelled");
-            throw new RuntimeException("The project has already been completed or cancelled");
+        if (project.getStatus() == ProjectStatus.IN_PROGRESS) {
+            log.error("The project has already status in progress");
+            throw new RuntimeException("The project has already status in progress");
         }
 
         if (project.getFreelancer() != null) {
